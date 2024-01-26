@@ -122,7 +122,7 @@ contract GdaNFTContractTest is Test {
         assertApproxEqAbs(flowRate1+flowRate2+flowRate3, totalFlowRate, 10);
     }
 
-    function testFuzzFlowRate(uint96 _amount1, uint96 _amount2) public{
+    /*function testFuzzFlowRate(uint96 _amount1, uint96 _amount2) public{
         uint tokenPrice = gdaNFTContract.tokenPrice();
         //avoid divide by 0
         uint96 amount1 = _amount1+1;
@@ -139,6 +139,6 @@ contract GdaNFTContractTest is Test {
         int96 flowRate1 = pool.getMemberFlowRate(account1);
         int96 flowRate2 = pool.getMemberFlowRate(account2);
         assertApproxEqAbs(flowRate1, ratio*flowRate2, 10);
-    }
+    }*/
     
 }

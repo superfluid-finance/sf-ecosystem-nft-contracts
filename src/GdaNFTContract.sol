@@ -20,7 +20,6 @@ contract GdaNFTContract is ERC721, Ownable {
 
     ISuperfluidPool public pool;
     ISETH public nativeToken;
-    int96 public flowRatePerMint;
     uint96 public flowDuration;
     uint96 public tokenPrice;
     string public uri;
@@ -54,7 +53,6 @@ contract GdaNFTContract is ERC721, Ownable {
         nativeToken = _nativeToken;
         tokenPrice = _tokenPrice;
         flowDuration = _flowDuration;
-        flowRatePerMint = int96(tokenPrice / flowDuration);
         pool = SuperTokenV1Library.createPool(
             nativeToken,
             address(this),
@@ -75,14 +73,11 @@ contract GdaNFTContract is ERC721, Ownable {
     function _gdaMint(address to, uint256 tokenId) private {
         _mint(to, tokenId);
         nativeToken.upgradeByETH{value: tokenPrice}();
-        int96 currentFlowRate = nativeToken.getFlowDistributionFlowRate(
-            address(this),
-            pool
-        );
+        int96 newFlowRate = int96(uint96(nativeToken.balanceOf(address(this))) / flowDuration);
         nativeToken.distributeFlow(
             address(this),
             pool,
-            currentFlowRate + flowRatePerMint
+            newFlowRate
         );
         nativeToken.updateMemberUnits(pool, to, pool.getUnits(to) + 1);
     }
@@ -122,4 +117,6 @@ contract GdaNFTContract is ERC721, Ownable {
     function setURI(string memory _uri) external onlyOwner {
         uri = _uri;
     }
+
+    //example of uri: https://ipfs.
 }
