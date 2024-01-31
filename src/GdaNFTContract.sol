@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SuperTokenV1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 import {ISuperfluidPool, PoolConfig} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/IGeneralDistributionAgreementV1.sol";
 import {ISETH} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/tokens/ISETH.sol";
@@ -15,7 +16,7 @@ import {ISETH} from "@superfluid-finance/ethereum-contracts/contracts/interfaces
  * distribute the flow to the pool. The flow will be distributed the pool members, who are no other than
  * the NFT minters.
  */
-contract GdaNFTContract is ERC721, Ownable {
+contract GdaNFTContract is ERC721, Ownable, ReentrancyGuard {
     using SuperTokenV1Library for ISETH;
 
     ISuperfluidPool public pool;
@@ -29,6 +30,13 @@ contract GdaNFTContract is ERC721, Ownable {
             distributionFromAnyAddress: true
         });
     uint public tokenToMint;
+    struct Mint{
+        address to;
+        uint256 tokenId;
+        uint256 timestamp;
+    };
+    mapping (address=>Mint) public userMint;
+    mapping (address=>bool) public hasMinted;
 
     event TokensMinted(address indexed to, uint256 amount);
 
@@ -61,6 +69,14 @@ contract GdaNFTContract is ERC721, Ownable {
         tokenToMint = 0;
     }
 
+    modifier didNotMint(address account) {
+        require(
+            hasMinted[account] == false,
+            "GdaNFTContract: account already minted"
+        );
+        _;
+    }
+
     /**
      * @dev Internal function that mints a NFT for the given address
      * @notice in the same transaction, the contract will also upgrade the native token to super token and
@@ -73,7 +89,7 @@ contract GdaNFTContract is ERC721, Ownable {
     function _gdaMint(address to, uint256 tokenId) private {
         _mint(to, tokenId);
         nativeToken.upgradeByETH{value: tokenPrice}();
-        int96 newFlowRate = int96(uint96(nativeToken.balanceOf(address(this))) / flowDuration);
+        int96 newFlowRate = int96(uint96(nativeToken.balanceOf(address(this))*9/10) / flowDuration);
         nativeToken.distributeFlow(
             address(this),
             pool,
@@ -88,7 +104,7 @@ contract GdaNFTContract is ERC721, Ownable {
      * @param amount Amount of NFTs to mint
      */
 
-    function gdaMint(address to, uint256 amount) external payable {
+    function gdaMint(address to, uint256 amount) didNotMint(_msgSender()) nonReentrant() external payable {
         require(
             msg.value == amount * tokenPrice,
             "GdaNFTContract: not enough eth sent"
