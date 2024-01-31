@@ -50,42 +50,49 @@ contract GdaNFTContractTest is Test {
         seth = sfd.deployNativeAssetSuperToken("fETHx", "FETHX");
 
         vm.deal(account1, 100000000000000000000000000000);
-        gdaNFTContract = new GdaNFTContract("GdaNFT", "GdaNFT", "",seth,1000000000000,100000);
+        vm.deal(account2, 100000000000000000000000000000);
+        vm.deal(account3, 100000000000000000000000000000);
+        gdaNFTContract = new GdaNFTContract("GdaNFT", "GdaNFT",seth,1000000000000,100000);
         pool= gdaNFTContract.pool();
     }
 
     function testMint() public {
         uint tokenPrice = gdaNFTContract.tokenPrice();
-        gdaNFTContract.gdaMint{value: tokenPrice}(account1, 1);
+        vm.startPrank(account1);
+        gdaNFTContract.gdaMint{value: tokenPrice}();
+        vm.stopPrank();
         assertEq(gdaNFTContract.balanceOf(account1), 1);
     }
 
     function testMemberUnits() public {
         uint tokenPrice = gdaNFTContract.tokenPrice();
-        gdaNFTContract.gdaMint{value: tokenPrice}(account1, 1);
-        gdaNFTContract.gdaMint{value: 4*tokenPrice}(account1, 4);
         vm.startPrank(account1);
+        gdaNFTContract.gdaMint{value: tokenPrice}();
         seth.connectPool(pool);
         vm.stopPrank();
         console.log(pool.getUnits(account1));
-        assertEq(pool.getUnits(account1), 5);
+        assertEq(pool.getUnits(account1), 1);
     }
 
     function testTotalUnits() public {
         uint tokenPrice = gdaNFTContract.tokenPrice();
-        gdaNFTContract.gdaMint{value: tokenPrice}(account1, 1);
-        gdaNFTContract.gdaMint{value: 4*tokenPrice}(account1, 4);
-        assertEq(pool.getTotalUnits(), 5);
+        vm.startPrank(account1);
+        gdaNFTContract.gdaMint{value: tokenPrice}();
+        vm.stopPrank();
+        vm.startPrank(account2);
+        gdaNFTContract.gdaMint{value: tokenPrice}();
+        vm.stopPrank();
+        assertEq(pool.getTotalUnits(), 2);
     }
 
     function testFlowRate() public {
         uint tokenPrice = gdaNFTContract.tokenPrice();
-        gdaNFTContract.gdaMint{value: tokenPrice}(account1, 1);
-        gdaNFTContract.gdaMint{value: tokenPrice}(account2, 1);
         vm.startPrank(account1);
+        gdaNFTContract.gdaMint{value: tokenPrice}();
         seth.connectPool(pool);
         vm.stopPrank();
         vm.startPrank(account2);
+        gdaNFTContract.gdaMint{value: tokenPrice}();
         seth.connectPool(pool);
         vm.stopPrank();
         int96 flowRate1 = pool.getMemberFlowRate(account1);
@@ -97,16 +104,16 @@ contract GdaNFTContractTest is Test {
 
     function testAdvancedFlowRate() public {
         uint tokenPrice = gdaNFTContract.tokenPrice();
-        gdaNFTContract.gdaMint{value: tokenPrice}(account1, 1);
-        gdaNFTContract.gdaMint{value: 4*tokenPrice}(account2, 4);
-        gdaNFTContract.gdaMint{value: 5*tokenPrice}(account3, 5);
         vm.startPrank(account1);
+        gdaNFTContract.gdaMint{value: tokenPrice}();
         seth.connectPool(pool);
         vm.stopPrank();
         vm.startPrank(account2);
+        gdaNFTContract.gdaMint{value: tokenPrice}();
         seth.connectPool(pool);
         vm.stopPrank();
         vm.startPrank(account3);
+        gdaNFTContract.gdaMint{value: tokenPrice}();
         seth.connectPool(pool);
         vm.stopPrank();
         int96 flowRate1 = pool.getMemberFlowRate(account1);
@@ -120,6 +127,34 @@ contract GdaNFTContractTest is Test {
             pool
         );
         assertApproxEqAbs(flowRate1+flowRate2+flowRate3, totalFlowRate, 10);
+    }
+
+    function testFailUserMintsMultiple() public {
+        uint tokenPrice = gdaNFTContract.tokenPrice();
+        vm.prank(account1);
+        gdaNFTContract.gdaMint{value: tokenPrice}();
+        vm.prank(account1);
+        gdaNFTContract.gdaMint{value: tokenPrice}();
+    }
+
+    function testOwnable() public{
+        assertEq(gdaNFTContract.owner(), address(this));
+    }
+
+    function testRecoverBalance() public{
+        uint tokenPrice = gdaNFTContract.tokenPrice();
+        vm.startPrank(account1);
+        gdaNFTContract.gdaMint{value: tokenPrice}();
+        vm.stopPrank();
+        gdaNFTContract.recoverBalance(account1, 10);
+    }
+
+    function testFailRecoverBalance() public{
+        uint tokenPrice = gdaNFTContract.tokenPrice();
+        vm.prank(account1);
+        gdaNFTContract.gdaMint{value: tokenPrice}();
+        vm.prank(account1);
+        gdaNFTContract.recoverBalance(account1, 10);
     }
 
     /*function testFuzzFlowRate(uint96 _amount1, uint96 _amount2) public{
