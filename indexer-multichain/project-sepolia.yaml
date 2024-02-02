@@ -1,0 +1,38 @@
+# // Auto-generated , DO NOT EDIT
+specVersion: 1.0.0
+version: 0.0.1
+name: polygon-mumbai-starter
+description: >-
+  This project can be use as a starting point for developing your new polygon
+  Mumbai SubQuery project
+runner:
+  node:
+    name: '@subql/node-ethereum'
+    version: '>=3.0.0'
+  query:
+    name: '@subql/query'
+    version: '*'
+schema:
+  file: ./schema.graphql
+network:
+  chainId: '11155111'
+  endpoint:
+    - 'https://eth-sepolia.rpc.x.superfluid.dev'
+dataSources:
+  - kind: ethereum/Runtime
+    startBlock: 5205807
+    options:
+      abi: Abi
+      address: '0x96c370E07AE0C8F0d647606E1620F3e82496eeD6'
+    assets:
+      Abi:
+        file: ./abis/abi.json
+    mapping:
+      file: ./dist/index.js
+      handlers:
+        - kind: ethereum/LogHandler
+          handler: handleMintedSepolia
+          filter:
+            topics:
+              - 'TokenMinted(address indexed to, uint256 amount)'
+repository: 'https://github.com/subquery/ethereum-subql-starter'

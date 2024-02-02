@@ -39,7 +39,7 @@ contract GdaNFTContract is ERC721, Ownable, ReentrancyGuard {
     mapping(address => Mint) public userMint;
     mapping(address => bool) public hasMinted;
 
-    event TokenMinted(address indexed to, uint256 amount);
+    event TokenMinted(address indexed to, uint256 tokenId);
     event BalanceRecovered(address indexed to, uint256 amount);
 
     /**
