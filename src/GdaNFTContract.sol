@@ -27,17 +27,19 @@ contract GdaNFTContract is ERC721, Ownable, ReentrancyGuard {
     uint96 public tokenPrice;
     PoolConfig public poolConfig =
         PoolConfig({
-            transferabilityForUnitsOwner: true,
+            transferabilityForUnitsOwner: false,
             distributionFromAnyAddress: true
         });
     uint public tokenToMint;
+    uint public lastMintTimestamp;
     struct Mint {
         address to;
         uint256 tokenId;
-        uint256 timestamp;
+        uint timestamp;
     }
     mapping(address => Mint) public userMint;
     mapping(address => bool) public hasMinted;
+
 
     event TokenMinted(address indexed to, uint256 tokenId);
     event BalanceRecovered(address indexed to, uint256 amount);
@@ -66,6 +68,7 @@ contract GdaNFTContract is ERC721, Ownable, ReentrancyGuard {
             poolConfig
         );
         tokenToMint = 0;
+        lastMintTimestamp=block.timestamp;
     }
 
     /**
@@ -92,14 +95,15 @@ contract GdaNFTContract is ERC721, Ownable, ReentrancyGuard {
     function _gdaMint(address to, uint256 tokenId) private {
         hasMinted[to] = true;
         userMint[to] = Mint(to, tokenId, block.timestamp);
+        lastMintTimestamp = block.timestamp;
         _mint(to, tokenId);
         uint256 amountToUpgrade = (tokenPrice / 100) * 95;
         nativeToken.upgradeByETH{value: amountToUpgrade}();
         int96 newFlowRate = int96(
             uint96(nativeToken.balanceOf(address(this))) / flowDuration
         );
-        nativeToken.distributeFlow(address(this), pool, newFlowRate);
         nativeToken.updateMemberUnits(pool, to, 1);
+        nativeToken.distributeFlow(address(this), pool, newFlowRate);
     }
 
     /**
