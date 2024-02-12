@@ -9,6 +9,7 @@ import {ISuperfluidPool, PoolConfig} from "@superfluid-finance/ethereum-contract
 import {ISETH} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/tokens/ISETH.sol";
 import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {BokkyPooBahsDateTimeLibrary} from "./BokkyPooBahsDateTimeLibrary.sol";
 
 /**
  * @title GdaNFTContract
@@ -25,6 +26,7 @@ contract GdaNFTContract is ERC721, Ownable, ReentrancyGuard {
     ISETH public nativeToken;
     uint96 public flowDuration;
     uint96 public tokenPrice;
+    string public ipfsURI;
     PoolConfig public poolConfig =
         PoolConfig({
             transferabilityForUnitsOwner: false,
@@ -39,6 +41,7 @@ contract GdaNFTContract is ERC721, Ownable, ReentrancyGuard {
     }
     mapping(address => Mint) public userMint;
     mapping(address => bool) public hasMinted;
+    mapping (uint256=>address) public minter;
 
 
     event TokenMinted(address indexed to, uint256 tokenId);
@@ -95,6 +98,7 @@ contract GdaNFTContract is ERC721, Ownable, ReentrancyGuard {
     function _gdaMint(address to, uint256 tokenId) private {
         hasMinted[to] = true;
         userMint[to] = Mint(to, tokenId, block.timestamp);
+        minter[tokenId]=to;
         lastMintTimestamp = block.timestamp;
         _mint(to, tokenId);
         uint256 amountToUpgrade = (tokenPrice / 100) * 95;
@@ -118,6 +122,15 @@ contract GdaNFTContract is ERC721, Ownable, ReentrancyGuard {
     }
 
     /**
+     * @dev Function to set the token price
+     * @param _tokenPrice Price to set
+     */
+
+    function setTokenPrice(uint96 _tokenPrice) external onlyOwner {
+        tokenPrice = _tokenPrice;
+    }
+
+    /**
      * @dev Function to recover balance by the owner of the contract
      * @param to Address of send the balance
      * @param amount Amount to recover
@@ -130,40 +143,88 @@ contract GdaNFTContract is ERC721, Ownable, ReentrancyGuard {
 
     //**URI LOGIC *//
 
+    function calcHash(uint256 _tokenId) public view returns (string memory) {
+        return
+            Strings.toString(
+                uint32(
+                    uint256(keccak256(abi.encodePacked(_tokenId, minter[_tokenId])))
+                )
+            );
+    }
+
+    function setIPFSURI(string memory _ipfsuri) public onlyOwner {
+        ipfsURI = _ipfsuri;
+    }
+
     function calcURI(uint256 _tokenId) public view returns (string memory) {
-        string memory hash = Strings.toString(
-            uint32(
-                uint256(keccak256(abi.encodePacked(_tokenId + block.timestamp)))
-            )
-        );
         return
             string.concat(
-                "ipfs://bafkreic6cj3uo5zhdip3cl5exl6hcokw4czwx7jp2sdllzit6xcqxarrsa?seed=",
-                hash
+                ipfsURI,
+                calcHash(_tokenId)
             );
     }
 
     function generateJSON(
         uint256 _tokenId
     ) private view returns (string memory) {
-        return
-            string(
-                abi.encodePacked(
-                    "data:application/json;base64,",
-                    Base64.encode(
-                        bytes(
-                            abi.encodePacked(
-                                '{"name":"My WebGL NFT",',
-                                '"description":"One of the best NFTs, by yours truly",',
-                                '"animation_url":"',
-                                calcURI(_tokenId),
-                                '"}'
-                            )
+        // Using the BokkyPooBahsDateTimeLibrary to convert the timestamp to a date
+        // This library stops working beyond the year 2345
+        // The question remails : is assuming your code will break in 300 years ethereum aligned?
+
+        (uint year, uint month, uint day, , ,) = BokkyPooBahsDateTimeLibrary.timestampToDateTime(lastMintTimestamp + flowDuration);
+        string memory fullDate = string.concat(
+            Strings.toString(year),
+            "-",
+            Strings.toString(month),
+            "-",
+            Strings.toString(day)
+        );
+
+        string memory stringFlowRate = string.concat(
+            Strings.toString(
+            uint96(
+                pool.getMemberFlowRate(minter[_tokenId])
+            )
+        ),
+        "wei/s"
+        );
+
+        return string(
+            abi.encodePacked(
+                "data:application/json;base64,",
+                Base64.encode(
+                    bytes(
+                        abi.encodePacked(
+                            '{"name":"Superfluid Ecosystem - Test",',
+                            '"description":"This is a testnet version of the Superfluid Ecosystem NFT",',
+                            '"animation_url":"',
+                            calcURI(_tokenId),
+                            '",',
+                            '"attributes":[',
+                                '{',
+                                    '"trait_type":"FlowRate",',
+                                    '"value":"',
+                                    Strings.toString(
+                                        uint96(
+                                            pool.getMemberFlowRate(minter[_tokenId])
+                                        )
+                                    ),
+                                '"},', // Added a comma here to separate objects within the array
+                                '{',
+                                    '"trait_type":"EndOfFlowDate",',
+                                    '"value":"',
+                                    fullDate,
+                                '"}',
+                            ']}'
                         )
                     )
                 )
-            );
+            )
+        );
     }
+
+
+
 
     // token URI:
     function tokenURI(
