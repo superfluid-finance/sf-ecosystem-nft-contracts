@@ -204,11 +204,7 @@ contract GdaNFTContract is ERC721, Ownable, ReentrancyGuard {
                                 '{',
                                     '"trait_type":"FlowRate",',
                                     '"value":"',
-                                    Strings.toString(
-                                        uint96(
-                                            pool.getMemberFlowRate(minter[_tokenId])
-                                        )
-                                    ),
+                                    stringFlowRate,
                                 '"},', // Added a comma here to separate objects within the array
                                 '{',
                                     '"trait_type":"EndOfFlowDate",',
