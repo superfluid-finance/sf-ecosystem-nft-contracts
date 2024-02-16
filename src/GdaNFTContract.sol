@@ -195,8 +195,8 @@ contract GdaNFTContract is ERC721, Ownable, ReentrancyGuard {
                 Base64.encode(
                     bytes(
                         abi.encodePacked(
-                            '{"name":"Superfluid Ecosystem - Test",',
-                            '"description":"This is a testnet version of the Superfluid Ecosystem NFT",',
+                            '{"name":"Superfluid Ecosystem Rewards Pass",',
+                            '"description":"An NFT to celebrate the launch of Superfluid Distribution Pools.",',
                             '"animation_url":"',
                             calcURI(_tokenId),
                             '",',
