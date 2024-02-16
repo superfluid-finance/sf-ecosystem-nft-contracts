@@ -177,7 +177,7 @@ contract GdaNFTContract is ERC721, Ownable, ReentrancyGuard {
                 pool.getMemberFlowRate(minter[_tokenId])
             )
         ),
-        "wei/s"
+        " wei/s"
         );
 
         return string(
@@ -196,7 +196,7 @@ contract GdaNFTContract is ERC721, Ownable, ReentrancyGuard {
                                     '"trait_type":"FlowRate",',
                                     '"value":"',
                                     stringFlowRate,
-                                '"},', // Added a comma here to separate objects within the array
+                                '"},',
                                 '{',
                                     '"trait_type":"EndOfFlowDate",',
                                     '"value":"',
