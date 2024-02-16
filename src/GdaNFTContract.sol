@@ -27,25 +27,26 @@ contract GdaNFTContract is ERC721, Ownable, ReentrancyGuard {
     uint96 public flowDuration;
     uint96 public tokenPrice;
     string public ipfsURI;
-    PoolConfig public poolConfig =
+    /*PoolConfig public poolConfig =
         PoolConfig({
             transferabilityForUnitsOwner: false,
             distributionFromAnyAddress: true
-        });
+        });*/
     uint public tokenToMint;
     uint public lastMintTimestamp;
     struct Mint {
-        address to;
-        uint256 tokenId;
+        uint tokenId;
         uint timestamp;
     }
     mapping(address => Mint) public userMint;
     mapping(address => bool) public hasMinted;
-    mapping (uint256=>address) public minter;
+    mapping (uint=>address) public minter;
 
 
-    event TokenMinted(address indexed to, uint256 tokenId);
-    event BalanceRecovered(address indexed to, uint256 amount);
+    event TokenMinted(address indexed to, uint tokenId);
+    event BalanceRecovered(address indexed to, uint amount);
+    event priceUpdated(uint96 newPrice);
+    event ipfsURIUpdated(string newURI);
 
     /**
      * @dev Contructor of the GdaNFTContract
@@ -68,22 +69,9 @@ contract GdaNFTContract is ERC721, Ownable, ReentrancyGuard {
         pool = SuperTokenV1Library.createPool(
             nativeToken,
             address(this),
-            poolConfig
+            PoolConfig({transferabilityForUnitsOwner: false, distributionFromAnyAddress: true})
         );
-        tokenToMint = 0;
         lastMintTimestamp=block.timestamp;
-    }
-
-    /**
-     * @dev Modifier that checks if the account has already minted a NFT
-     * @param account Address of the account
-     */
-    modifier didNotMint(address account) {
-        require(
-            hasMinted[account] == false,
-            "GdaNFTContract: account already minted"
-        );
-        _;
     }
 
     /**
@@ -95,13 +83,13 @@ contract GdaNFTContract is ERC721, Ownable, ReentrancyGuard {
      * @param tokenId Id of the NFT
      */
 
-    function _gdaMint(address to, uint256 tokenId) private {
+    function _gdaMint(address to, uint tokenId) private {
         hasMinted[to] = true;
-        userMint[to] = Mint(to, tokenId, block.timestamp);
+        userMint[to] = Mint(tokenId, block.timestamp);
         minter[tokenId]=to;
         lastMintTimestamp = block.timestamp;
         _mint(to, tokenId);
-        uint256 amountToUpgrade = (tokenPrice / 100) * 95;
+        uint amountToUpgrade = (tokenPrice / 100) * 95;
         nativeToken.upgradeByETH{value: amountToUpgrade}();
         int96 newFlowRate = int96(
             uint96(nativeToken.balanceOf(address(this))) / flowDuration
@@ -114,7 +102,8 @@ contract GdaNFTContract is ERC721, Ownable, ReentrancyGuard {
      * @dev Public function that mints a NFT for the given address
      */
 
-    function gdaMint() external payable didNotMint(_msgSender()) nonReentrant {
+    function gdaMint() external payable nonReentrant {
+        require(!hasMinted[_msgSender()], "GdaNFTContract: account already minted"); 
         require(msg.value == tokenPrice, "GdaNFTContract: not enough eth sent");
         _gdaMint(_msgSender(), tokenToMint);
         tokenToMint++;
@@ -128,6 +117,7 @@ contract GdaNFTContract is ERC721, Ownable, ReentrancyGuard {
 
     function setTokenPrice(uint96 _tokenPrice) external onlyOwner {
         tokenPrice = _tokenPrice;
+        emit priceUpdated(_tokenPrice);
     }
 
     /**
@@ -143,20 +133,21 @@ contract GdaNFTContract is ERC721, Ownable, ReentrancyGuard {
 
     //**URI LOGIC *//
 
-    function calcHash(uint256 _tokenId) public view returns (string memory) {
+    function calcHash(uint _tokenId) public view returns (string memory) {
         return
             Strings.toString(
                 uint32(
-                    uint256(keccak256(abi.encodePacked(_tokenId, minter[_tokenId])))
+                    uint(keccak256(abi.encodePacked(_tokenId, minter[_tokenId])))
                 )
             );
     }
 
     function setIPFSURI(string memory _ipfsuri) public onlyOwner {
         ipfsURI = _ipfsuri;
+        emit ipfsURIUpdated(_ipfsuri);
     }
 
-    function calcURI(uint256 _tokenId) public view returns (string memory) {
+    function calcURI(uint _tokenId) public view returns (string memory) {
         return
             string.concat(
                 ipfsURI,
@@ -165,7 +156,7 @@ contract GdaNFTContract is ERC721, Ownable, ReentrancyGuard {
     }
 
     function generateJSON(
-        uint256 _tokenId
+        uint _tokenId
     ) private view returns (string memory) {
         // Using the BokkyPooBahsDateTimeLibrary to convert the timestamp to a date
         // This library stops working beyond the year 2345
@@ -224,7 +215,7 @@ contract GdaNFTContract is ERC721, Ownable, ReentrancyGuard {
 
     // token URI:
     function tokenURI(
-        uint256 _tokenId
+        uint _tokenId
     ) public view override returns (string memory) {
         return generateJSON(_tokenId);
     }
