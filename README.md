@@ -1,19 +1,19 @@
-## Foundry
+# Ecosystem NFT Contracts
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+This project represents the smart contracts used for the Superfluid NFT Ecosystem Rewards Pass mint as seen [here](https://mint.superfluid.finance/). The smart contracts use Superfluid's Distribution Pools in order to assign a share in a pool to all the minters.
 
-Foundry consists of:
+## How does it work?
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+Each time a user mints an NFT, a share (unit) is assigned to that user at a Superfluid Distribution Pool on the blockchain. At the same time, the stream period is extended to end at a month from that last mint. This might make the total flow rate a bit bigger or smaller for the whole Pool, but always makes the flow rate a bit smaller for each member unit (share) in the Pool. However the stream keeps going for a longer period to compensate for that.
 
-## Documentation
-
-https://book.getfoundry.sh/
 
 ## Usage
+
+### Install
+
+```shell
+$ forge install
+```
 
 ### Build
 
@@ -27,40 +27,4 @@ $ forge build
 $ forge test
 ```
 
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+_PS: If you are having trouble running `forge build` and `forge test` because of `stack too deep` error, this is normal as the tests deploy the whole Superfluid Framework. You can get around that by using [the Yul Optimizer](https://docs.soliditylang.org/en/latest/yul.html) by adding the flag --via-ir._
