@@ -1,6 +1,6 @@
 # Ecosystem NFT Contracts
 
-This project represents the smart contracts used for the Superfluid NFT Ecosystem Rewards Pass mint as seen [here](https://mint.superfluid.finance/). The smart contracts use Superfluid's Distribution Pools in order to assign a share in a pool to all the minters.
+This project represents the smart contracts used for the Superfluid NFT Ecosystem Rewards Pass mint as seen [here](https://mint.superfluid.finance/). The smart contracts use Superfluid's [Distribution Pools](https://docs.superfluid.finance/docs/protocol/distributions/guides/pools) in order to assign a share in a pool to all the minters.
 
 ## How does it work?
 
