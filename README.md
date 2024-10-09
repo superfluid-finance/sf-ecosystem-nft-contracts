@@ -30,3 +30,19 @@ $ forge test
 ```
 
 _PS: If you are having trouble running `forge build` and `forge test` because of `stack too deep` error, this is normal as the tests deploy the whole Superfluid Framework. You can get around that by using [the Yul Optimizer](https://docs.soliditylang.org/en/latest/yul.html) by adding the flag --via-ir._
+
+## Contract address
+
+The contracts are deployed on 9 networks:
+- Gnosis Chain
+- Polygon
+- Arbitrum
+- Avalanche
+- BNB Chain
+- CELO
+- Base
+- Scroll
+- Optimism
+
+The address of the NFT contract is the same on all networks:
+`0xcd4e576ba1B74692dBc158c5F399269Ec4739577`
